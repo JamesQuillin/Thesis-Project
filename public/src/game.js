@@ -1,9 +1,19 @@
 var testVar = 'client var';
 // module.exports = testVar; weird behavior
 var window = (window) ? window : global;
-
 window.multiPlayers = {};
 window.multiPlayers['textSprites'] = {};
+
+
+
+
+window.onbeforeunload = function() {
+  socket.emit('disconnectingUser', {id: playerId});
+}
+
+
+
+
 
 var TEXTOFFSETX = 0;
 var TEXTOFFSETY = 50;
@@ -19,17 +29,14 @@ var sprite;
 var text;
 var randX;
 var randY;
-
 //_____________________________________________________________________________
 // Main Game Functions
-
 function preload() {
   game.load.image('background', 'asset/tileBackground.png');
   game.load.image('blue-square', 'asset/sprites/blue-square.png');
   game.load.image('green-triangle', 'asset/sprites/green-triangle.png');
   game.load.image('red-circle', 'asset/sprites/red-circle.png');
 }
-
 function create() {
   if (true) {
     width = 0;
@@ -39,7 +46,6 @@ function create() {
     game.physics.startSystem(Phaser.Physics.P2JS);
     background = game.add.tileSprite(-width, -height, game.world.width, game.world.height, 'background');
     background.fixedToCamera = true;
-
     for (var i = 0; i < 50; i++) {
       sprite = game.add.sprite(game.world.randomX, game.world.randomY, 'blue-square');
       sprite.scale.x = .5;
@@ -71,14 +77,15 @@ function create() {
     cursors = game.input.keyboard.createCursorKeys();
     game.physics.p2.enable(sprite);
   }
-
   socket = window.io(); // 1111111111111111111111111111111111111111111111111111
-
+  socket.on('destroyThisPlayer', function(id) {
+    multiPlayers[id.id].destroy();
+    multiPlayers[id.id] = undefined;
+  });
   socket.on('playerId', function(data) { // 44444444444444444444444444444444444
     playerId = data.playerId;
     window.multiPlayers[playerId] = sprite;
     window.multiPlayers['textSprites'][playerId] = text;
-
     socket.emit('createBot', { // 555555555555555555555555555555555555555555555
       x: sprite.x,
       y: sprite.y,
@@ -87,7 +94,6 @@ function create() {
       playerName: playerName
     });
   });
-
   // 88888888888888888888888888 || (end initialization) 12.12.12.12.12.12.12.12
   socket.on('createMultiplayer', function(data) {
     if (Object.keys(data).length === 0) {
@@ -96,7 +102,6 @@ function create() {
       getSprite(data.playerId, data);
     }
   });
-
   //  (part of update loop)  15.15.15.15.15.15.15.15.15.15.15.15.15.15.15.15.15
   socket.on('multiplayerUpdate', function(data) {
     var curSprite = getSprite(data.playerId, data);
@@ -106,10 +111,8 @@ function create() {
     curSprite.x = data.x;
     curSprite.y = data.y;
   });
-
   socket.emit('givePlayers', {}); // 999999999999999999999999999999999999999999
 }
-
 // (update loop emits 'clientUpdate') 13.13.13.13.13.13.13.13.13.13.13.13.13.13
 function update() {
   sprite.body.setZeroVelocity();
@@ -129,14 +132,12 @@ function update() {
     background.tilePosition.y -= ((sprite.body.velocity.y) * game.time.physicsElapsed);
   }
   if (playerId === null || playerId === undefined) {
-
   } else {
     socketUpdateTransmit(sprite.body.x, sprite.body.y);
   }
   text.x = Math.floor(sprite.x + TEXTOFFSETX);
   text.y = Math.floor(sprite.y + TEXTOFFSETY);
 }
-
 function socketUpdateTransmit(x, y) {
   socket.emit('clientUpdate', {
     x: x,
@@ -146,16 +147,12 @@ function socketUpdateTransmit(x, y) {
     playerName: playerName
   });
 };
-
 function render() {/* game.debug.cameraInfo(game.camera, 32, 32);*/}
-
 //_____________________________________________________________________________
 // Other Functions
-
 function randomTint() {
   return Math.random() * 0xffffff;
 }
-
 function getSprite(playerIdToCheck, data) {
   if (window.multiPlayers.hasOwnProperty(playerIdToCheck) === false) {
     var newSprite = initBot(data.x, data.y, 'red-circle', data.tint);
@@ -167,7 +164,6 @@ function getSprite(playerIdToCheck, data) {
     return window.multiPlayers[playerIdToCheck];
   }
 }
-
 function initBot(x, y, id, tint) {
   var tempSprite = game.add.sprite(x, y, id);
   tempSprite.tint = tint;
@@ -175,5 +171,4 @@ function initBot(x, y, id, tint) {
   tempSprite.scale.y = 0.75;
   return tempSprite;
 }
-
 module.exports = testVar;

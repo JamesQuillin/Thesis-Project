@@ -3,19 +3,14 @@ var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io')(server);
 var port = process.env.PORT || 8081;
-
 var testVar = 'server var';
 module.exports = testVar; // for travis CI
-
 app.use(express.static(__dirname + '/public'));
-
 server.listen(port, function () {
   console.log('listening on port >>>>' + port);
 });
-
 //_____________________________________________________________________________
 // Begin of Socket IO stuff
-
 var players = [];
 /*
   { id: 'yX0TqQvwmdmvd_XUAAAA' },
@@ -25,15 +20,27 @@ var players = [];
     tint: 15754094.832733741,
     playerName: 'asdf' }
 */
-
 io.on('connection', function(socket) { // 2222222222222222222222222222222222222
-  players.push({/*id: socket.id*/});
+  // players.push({/*id: socket.id*/});
+
+
+
+  socket.on('disconnectingUser', function(id) {
+    socket.broadcast.emit('destroyThisPlayer', {
+      id: id.id
+    });
+    players[id.id] = undefined;
+  });
+
+
+
+
 
   socket.emit('playerId', { // 333333333333333333333333333333333333333333333333
     playerId: players.length
   });
-
   socket.on('createBot', function (data) { // 666666666666666666666666666666666
+    console.log(data);
     players[data.playerId] = data;
     socket.broadcast.emit('createMultiplayer', { // 777777777777777777777777777
       x: data.x,
@@ -43,7 +50,6 @@ io.on('connection', function(socket) { // 2222222222222222222222222222222222222
       playerName: data.playerName
     });
   });
-
   socket.on('givePlayers', function () { // 10.10.10.10.10.10.10.10.10.10.10.10
     players.map(function(cur) {
       // console.log('sending on givePlayers', cur);
@@ -62,11 +68,9 @@ io.on('connection', function(socket) { // 2222222222222222222222222222222222222
       }
     });
   });
-
   socket.on('clientUpdate', function (data) {  // 14.14.14.14.14.14.14.14.14.14
     socket.broadcast.emit('multiplayerUpdate', data);
   });
-
   socket.on('disconnect', function(data) {
     console.log('disconnect event triggered', data, JSON.stringify(data));
   });
